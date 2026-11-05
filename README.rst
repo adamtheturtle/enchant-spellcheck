@@ -26,5 +26,3 @@ The accepted-words file contains one word per line and matching is case sensitiv
 Diagnostics include the filename, line, column, and misspelled word.
 Exit status is 0 for valid text, 1 for misspellings, and 2 for usage or input errors.
 Results depend on the installed dictionary.
-
-See the `documentation <https://github.com/adamtheturtle/enchant-spellcheck/tree/main/docs/source>`_ for command details, contributing, and releases.
