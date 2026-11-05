@@ -30,6 +30,12 @@ Then install this package:
 
    uv tool install enchant-spellcheck
 
+Before the first PyPI release, install directly from GitHub:
+
+.. code-block:: shell
+
+   uv tool install git+https://github.com/adamtheturtle/enchant-spellcheck.git
+
 Usage
 -----
 

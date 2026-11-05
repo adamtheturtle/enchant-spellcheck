@@ -1,3 +1,3 @@
 # Initial development
 
-The first release has not yet been published.
+Development began with the standalone Enchant command-line checker.
