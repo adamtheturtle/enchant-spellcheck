@@ -16,6 +16,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: macos-latest
     environment: release
+    env:
+      UV_PYTHON: '3.13'
     permissions:
       id-token: write
       contents: write
