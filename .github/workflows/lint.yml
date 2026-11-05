@@ -1,0 +1,68 @@
+---
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request: {}
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # Run at 1:00 every day
+    - cron: 0 1 * * *
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        python-version: ['3.13']
+        platform: [ubuntu-latest, windows-latest]
+        hook-stage: [pre-commit, pre-push, manual]
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v7
+        # We need our tags in order to calculate the version
+        # in the Sphinx setup.
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Enchant and dictionaries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libenchant-2-2 hunspell-en-us
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+          cache-dependency-glob: '**/pyproject.toml'
+
+      - name: Lint
+        uses: j178/prek-action@v3.1.0
+        with:
+          prek-version: 0.5.9
+          extra-args: >-
+            --all-files --hook-stage ${{ matrix.hook-stage }} --verbose
+        env:
+          UV_NO_CACHE: '1'
+          UV_PYTHON: ${{ matrix.python-version }}
+          # nixfmt is only available on Linux.
+          # hadolint is not available on Windows.
+          SKIP: ${{ runner.os == 'Windows' && 'nixfmt,hadolint' || '' }}
+
+  completion-lint:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() }}
+    steps:
+      - name: Check matrix job status
+        run: |-
+          if ! ${{ needs.build.result == 'success' }}; then
+            echo "One or more matrix jobs failed"
+            exit 1
+          fi

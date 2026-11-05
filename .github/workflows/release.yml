@@ -1,0 +1,90 @@
+---
+name: Release
+
+on:
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Publish a release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Enchant and dictionaries
+        run: sudo apt-get update && sudo apt-get install -y libenchant-2-2 hunspell-en-us
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+          cache-dependency-glob: '**/pyproject.toml'
+
+      - name: Validate release
+        run: |
+          uv run --group=dev pytest -vvv . --cov --cov-config=pyproject.toml
+          uv run --group=dev prek run --all-files --hook-stage pre-commit
+          uv run --group=dev prek run --all-files --hook-stage pre-push
+          uv run --group=dev prek run --all-files --hook-stage manual
+
+      - name: Calver calculate version
+        uses: StephaneBour/actions-calver@master
+        id: calver
+        with:
+          date_format: '%Y.%m.%d'
+          release: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Assemble native Markdown release notes
+        env:
+          RELEASE: ${{ steps.calver.outputs.release }}
+        run: |
+          uv run --group=release towncrier build --yes --version "$RELEASE"
+          uv run --group=dev snapper --native --max-width 0 --in-place "docs/source/changelog/$RELEASE.md"
+          cp "docs/source/changelog/$RELEASE.md" release-notes.md
+
+      - name: Commit notes and tag the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE: ${{ steps.calver.outputs.release }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/source/changelog newsfragments
+          git commit -m "Release $RELEASE"
+          gh auth setup-git
+          git push origin HEAD:main
+          git tag "$RELEASE"
+          git push origin "$RELEASE"
+
+      - name: Build a binary wheel and a source tarball
+        run: |
+          uv build --sdist --wheel --out-dir dist/
+          uv run --group=release check-wheel-contents dist/*.whl
+
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+
+      - name: Create a GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE: ${{ steps.calver.outputs.release }}
+        run: gh release create "$RELEASE" dist/*.whl dist/*.tar.gz --verify-tag --title
+          "Release $RELEASE" --notes-file release-notes.md

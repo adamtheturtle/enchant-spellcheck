@@ -1,0 +1,7 @@
+---
+- id: enchant-spellcheck
+  name: enchant-spellcheck
+  description: Check text files against an Enchant dictionary.
+  entry: enchant-spellcheck
+  language: python
+  types: [text]

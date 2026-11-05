@@ -1,0 +1,65 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request: {}
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # Run at 1:00 every day
+    - cron: 0 1 * * *
+
+permissions: {}
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13', '3.14', '3.15']
+        platform: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v7
+        # We need our tags in order to calculate the version
+        # in the Sphinx setup.
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Enchant and dictionaries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libenchant-2-2 hunspell-en-us
+
+      - name: Install Enchant on macOS
+        if: runner.os == 'macOS'
+        run: brew install enchant
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+          cache-dependency-glob: '**/pyproject.toml'
+
+      - name: Run tests
+        run: |
+          # We run tests against "." and not the tests directory as we test the README
+          # and documentation.
+          uv run --group=dev pytest -vvv . --cov --cov-config=pyproject.toml
+        env:
+          UV_PYTHON: ${{ matrix.python-version }}
+
+  completion-ci:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() }}  # Run even if one matrix job fails
+    steps:
+      - name: Check matrix job status
+        run: |-
+          if ! ${{ needs.build.result == 'success' }}; then
+            echo "One or more matrix jobs failed"
+            exit 1
+          fi
