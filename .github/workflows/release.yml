@@ -14,7 +14,7 @@ jobs:
   build:
     name: Publish a release
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     environment: release
     permissions:
       id-token: write
@@ -28,7 +28,7 @@ jobs:
           token: ${{ secrets.RELEASE_PAT }}
 
       - name: Install Enchant and dictionaries
-        run: sudo apt-get update && sudo apt-get install -y libenchant-2-2 hunspell-en-us
+        run: brew install enchant
 
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.3
@@ -49,13 +49,26 @@ jobs:
           uv run --group=dev prek run --all-files --hook-stage manual
 
       - name: Calver calculate version
-        uses: StephaneBour/actions-calver@master
         id: calver
-        with:
-          date_format: '%Y.%m.%d'
-          release: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          uv run python - <<'PYTHON'
+          import os
+          import subprocess
+          from datetime import UTC, datetime
+          from pathlib import Path
+
+          today = datetime.now(tz=UTC).strftime("%Y.%m.%d")
+          tags = subprocess.check_output(["git", "tag", "--list"], text=True).splitlines()
+          patches = []
+          for tag in tags:
+              if tag == today:
+                  patches.append(0)
+              elif tag.startswith(today + ".") and tag[len(today) + 1:].isdigit():
+                  patches.append(int(tag[len(today) + 1:]))
+          release = f"{today}.{max(patches) + 1}" if patches else today
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"release={release}\n")
+          PYTHON
 
       - name: Assemble native Markdown release notes
         env:
@@ -85,9 +98,7 @@ jobs:
           uv run --group=release check-wheel-contents dist/*.whl
 
       - name: Publish distribution to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          verbose: true
+        run: uv publish --trusted-publishing always dist/*
 
       - name: Create a GitHub release
         env:

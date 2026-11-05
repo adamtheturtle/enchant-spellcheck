@@ -8,7 +8,8 @@ One-time setup
 --------------
 
 Configure a pending trusted publisher on PyPI for project ``enchant-spellcheck``, owner ``adamtheturtle``, repository ``enchant-spellcheck``, workflow ``release.yml``, and environment ``release``.
-The release workflow uses OpenID Connect and does not require a PyPI token.
+The release workflow uses OpenID Connect through ``uv publish`` and does not require a PyPI token.
+It runs on macOS without Docker-based actions.
 
 Create the GitHub ``release`` environment and restrict deployments to ``main``.
 Enable GitHub Pages with GitHub Actions as its build source.
