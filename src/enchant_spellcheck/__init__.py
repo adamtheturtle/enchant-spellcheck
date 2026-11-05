@@ -5,7 +5,7 @@ from pathlib import Path
 
 import click
 import enchant  # pyright: ignore[reportMissingTypeStubs]
-from enchant.errors import DictNotFoundError
+from enchant.errors import DictNotFoundError  # pyright: ignore[reportMissingTypeStubs]
 
 _BACKTICKS = re.compile(
     pattern=r"(?<!`)(?P<ticks>`{1,3})(?!`)[^`]*(?P=ticks)(?!`)"
@@ -58,7 +58,7 @@ def main(
                 if word.strip() != ""
             }
             if known_words is not None
-            else frozenset()
+            else frozenset[str]()
         )
         failed = False
         for file_path in files:
