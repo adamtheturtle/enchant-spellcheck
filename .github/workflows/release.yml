@@ -24,6 +24,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          # The release commit must pass the repository rules with an admin token.
+          token: ${{ secrets.RELEASE_PAT }}
 
       - name: Install Enchant and dictionaries
         run: sudo apt-get update && sudo apt-get install -y libenchant-2-2 hunspell-en-us
@@ -33,6 +35,11 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: '**/pyproject.toml'
+
+      - name: Check release credentials
+        env:
+          RELEASE_PAT: ${{ secrets.RELEASE_PAT }}
+        run: ': "${RELEASE_PAT:?Configure RELEASE_PAT as documented in docs/source/release-process.rst}"'
 
       - name: Validate release
         run: |
@@ -60,7 +67,7 @@ jobs:
 
       - name: Commit notes and tag the release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
           RELEASE: ${{ steps.calver.outputs.release }}
         run: |
           git config user.name 'github-actions[bot]'

@@ -63,4 +63,4 @@ Development
 -----------
 
 The project setup follows `doccmd <https://github.com/adamtheturtle/doccmd>`_, including setuptools-scm versions, uv dependency groups, prek hooks, strict type checking, Sphinx documentation, and Towncrier release notes.
-See the `contribution guide <https://adamtheturtle.github.io/enchant-spellcheck/contributing.html>`_ and `release process <https://adamtheturtle.github.io/enchant-spellcheck/release-process.html>`_.
+See the `contribution guide <https://github.com/adamtheturtle/enchant-spellcheck/blob/main/docs/source/contributing.rst>`_ and `release process <https://github.com/adamtheturtle/enchant-spellcheck/blob/main/docs/source/release-process.rst>`_.

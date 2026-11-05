@@ -13,6 +13,11 @@ The release workflow uses OpenID Connect and does not require a PyPI token.
 Create the GitHub ``release`` environment and restrict deployments to ``main``.
 Enable GitHub Pages with GitHub Actions as its build source.
 
+As in doccmd, configure a ``RELEASE_PAT`` repository secret belonging to an administrator who can bypass the required checks for the generated release commit.
+The token needs repository contents write access.
+Release commits and tags use this token so their pushes trigger CI and documentation deployment.
+The standard workflow token creates the GitHub release.
+
 Publishing
 ----------
 

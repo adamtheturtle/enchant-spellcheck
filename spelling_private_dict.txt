@@ -51,6 +51,7 @@ reStructuredText
 reco
 recursing
 repo
+reportMissingTypeStubs
 reportUnknownMemberType
 rst
 scm
