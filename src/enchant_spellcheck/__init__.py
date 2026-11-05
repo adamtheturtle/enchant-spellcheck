@@ -7,15 +7,10 @@ import click
 import enchant  # pyright: ignore[reportMissingTypeStubs]
 from enchant.errors import DictNotFoundError  # pyright: ignore[reportMissingTypeStubs]
 
-_BACKTICKS = re.compile(
-    pattern=r"(?<!`)(?P<ticks>`{1,3})(?!`)[^`]*(?P=ticks)(?!`)"
-)
+from enchant_spellcheck._exclusions import mask_backticks
+from enchant_spellcheck._jinja import mask_jinja
+
 _WORDS = re.compile(pattern=r"\w+(?:['\u2019]\w+)*", flags=re.UNICODE)
-
-
-def _mask_span(match: re.Match[str]) -> str:
-    """Hide a backtick span while preserving source positions."""
-    return "".join("\n" if char == "\n" else " " for char in match[0])
 
 
 @click.command(name="enchant-spellcheck")
@@ -24,6 +19,11 @@ def _mask_span(match: re.Match[str]) -> str:
     nargs=-1,
     required=True,
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
+@click.option(
+    "--template",
+    type=click.Choice(choices=["jinja"]),
+    help="Ignore Jinja statements, expressions, and comments.",
 )
 @click.option(
     "--known-words",
@@ -38,7 +38,10 @@ def _mask_span(match: re.Match[str]) -> str:
 )
 @click.version_option(package_name="enchant-spellcheck")
 def main(
-    files: tuple[Path, ...], known_words: Path | None, language: str
+    files: tuple[Path, ...],
+    known_words: Path | None,
+    language: str,
+    template: str | None,
 ) -> None:
     """Check FILES for unknown words, ignoring backtick spans."""
     try:
@@ -63,7 +66,15 @@ def main(
         failed = False
         for file_path in files:
             content = file_path.read_text(encoding="utf-8")
-            masked = _BACKTICKS.sub(repl=_mask_span, string=content)
+            if template == "jinja":
+                try:
+                    masked = mask_jinja(content=content)
+                except ValueError as error:
+                    raise click.UsageError(
+                        message=f"{file_path}: {error}"
+                    ) from error
+            else:
+                masked = mask_backticks(content=content)
             for line_number, line in enumerate(
                 iterable=masked.splitlines(), start=1
             ):
