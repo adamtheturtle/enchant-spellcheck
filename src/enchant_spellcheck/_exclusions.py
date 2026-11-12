@@ -2,7 +2,7 @@
 
 import re
 
-BACKTICKS = re.compile(
+BACKTICKS: re.Pattern[str] = re.compile(
     pattern=r"(?<!`)(?P<ticks>`{1,3})(?!`)[^`]*(?P=ticks)(?!`)"
 )
 
