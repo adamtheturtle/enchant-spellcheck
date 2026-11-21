@@ -1,7 +1,8 @@
 Release process
 ===============
 
-The release workflow follows doccmd's calendar versions, Towncrier notes, setuptools-scm packaging, and PyPI trusted publishing.
+The release workflow uses the calendar version scheme from doccmd.
+It assembles notes with Towncrier, packages with setuptools-scm, and publishes to PyPI using trusted publishing.
 Native binaries and additional package-manager distributions are not configured.
 
 One-time setup
